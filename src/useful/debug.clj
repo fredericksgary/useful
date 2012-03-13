@@ -3,6 +3,7 @@
 ;; leave out of ns decl so we can load with classlojure.io/resource-forms
 (require '[clojure.pprint :as p])
 (require '[clojure.stacktrace :as s])
+(require 'clojure.string)
 
 (letfn [(interrogate-form [list-head form]
           `(let [display# (fn [val#]
@@ -35,3 +36,19 @@
     ([val] `(?! "/tmp/spit" ~val))
     ([file val]
        (interrogate-form `(#(spit ~file % :append true)) val))))
+
+
+(defn audit-fn
+  [f f-name]
+  (fn [& args]
+    (println "CALLING" (pr-str (list* f-name args)))
+    (try
+      (let [res (apply f args)]
+        (println "RETURNING" (pr-str res))
+        res)
+      (catch Exception e
+        (println "THREW" (pr-str e))))))
+
+(defmacro audit!
+  [f-name]
+  `(alter-var-root (var ~f-name) audit-fn '~f-name))
